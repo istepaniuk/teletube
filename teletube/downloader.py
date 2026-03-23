@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
+from xml.etree.ElementTree import Element, ElementTree
 
 from .config import Config, load_channels
 from .naming import build_video_dir, parse_upload_date, video_file_base
@@ -31,7 +32,7 @@ class RunStats:
 
 
 def run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess[str]:
-    command = ["yt-dlp", "--remote-components", "ejs:github", *args]
+    command = ["yt-dlp", *args]
     return subprocess.run(command, check=True, text=True, capture_output=True)
 
 
@@ -83,7 +84,7 @@ def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
 
 
 def list_channel_videos(channel: str, start_date: date) -> list[VideoEntry]:
-    result = run_yt_dlp(["--playlist-end", "10", "--dump-single-json", channel])
+    result = run_yt_dlp(["--dump-single-json", channel])
     return _parse_channel_entries(result.stdout, start_date)
 
 
@@ -107,11 +108,45 @@ def _rename_thumbnail_to_expected_name(video_dir: Path, video_file_base: str) ->
         shutil.move(str(thumb), str(target))
 
 
+def _create_nfo_file(video_dir: Path, video_file_base: str, entry: VideoEntry) -> None:
+    """Create a Jellyfin-compatible NFO metadata file for the video.
+    
+    Jellyfin expects episodedetails.nfo for videos organized by season.
+    Reference: https://jellyfin.org/docs/general/server/metadata/nfo/
+    """
+    nfo_path = video_dir / f"{video_file_base}.nfo"
+    
+    # Create episode details XML structure
+    episode = Element("episodedetails")
+    
+    title_elem = Element("title")
+    title_elem.text = entry.title
+    episode.append(title_elem)
+    
+    plot_elem = Element("plot")
+    plot_elem.text = f"YouTube video from {entry.upload_date.isoformat()}"
+    episode.append(plot_elem)
+    
+    aired_elem = Element("aired")
+    aired_elem.text = entry.upload_date.isoformat()
+    episode.append(aired_elem)
+    
+    uniqueid_elem = Element("uniqueid")
+    uniqueid_elem.set("type", "youtube")
+    uniqueid_elem.text = entry.video_id
+    episode.append(uniqueid_elem)
+    
+    # Write XML with proper declaration
+    tree = ElementTree(episode)
+    tree.write(nfo_path, encoding="utf-8", xml_declaration=True)
+
+
 def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
     """Download a video and its thumbnail to the destination directory.
     
     Video filename pattern: {YYYY-MM-DD video_id}.mp4 (or other ext from yt-dlp)
     Thumbnail: {YYYY-MM-DD video_id}.jpg
+    Metadata: {YYYY-MM-DD video_id}.nfo
     """
     destination.mkdir(parents=True, exist_ok=True)
     video_url = f"https://www.youtube.com/watch?v={entry.video_id}"
@@ -136,6 +171,7 @@ def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
     )
 
     _rename_thumbnail_to_expected_name(destination, base_name)
+    _create_nfo_file(destination, base_name, entry)
 
 
 def process_channel(channel: str, config: Config) -> RunStats:

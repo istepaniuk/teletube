@@ -17,6 +17,7 @@ library will be consumed using Jellyfin.
 - Skip videos older than `TELETUBE_START_DATE`.
 - Download best available quality up to 1080p.
 - Download thumbnail as JPEG and store it alongside the video file (same base name).
+- Generate Jellyfin metadata `.nfo` file with episode details (title, date, video ID).
 - Keep output layout as `channel/Season YYYY/<YYYY-MM-DD video_id>.<ext>` (Jellyfin-compatible).
 - Use video ID in filename to handle title changes across downloads.
 
