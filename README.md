@@ -1,12 +1,16 @@
 # Teletube
 
-Teletube is a small Python CronJob-style downloader that fetches YouTube channel videos with `yt-dlp` and stores them as:
+Teletube is a small Python CronJob-style downloader that fetches YouTube channel videos with `yt-dlp` and stores them in a Jellyfin-compatible layout:
 
 ```text
-<output-root>/<channel>/<YYYY-MM-DD title>/
+<output-root>/
+  <channel>/
+    Season <YYYY>/
+      <YYYY-MM-DD video_id>.mp4
+      <YYYY-MM-DD video_id>.jpg
 ```
 
-Each downloaded video directory contains a `folder.jpg` thumbnail.
+Each video is stored with its thumbnail using the same base filename (`<YYYY-MM-DD video_id>`), allowing for title changes without conflicts.
 
 ## Environment variables
 

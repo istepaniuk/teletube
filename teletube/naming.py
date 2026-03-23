@@ -29,10 +29,25 @@ def channel_folder_name(channel: str) -> str:
     return sanitize_title(channel)
 
 
-def video_folder_name(upload_date: date, title: str) -> str:
-    return f"{upload_date.isoformat()} {sanitize_title(title)}"
+def season_folder_name(upload_date: date) -> str:
+    """Return the season folder name based on upload year."""
+    return f"Season {upload_date.year}"
 
 
-def build_video_dir(output_root: Path, channel: str, upload_date: date, title: str) -> Path:
-    return output_root / channel_folder_name(channel) / video_folder_name(upload_date, title)
+def video_file_base(upload_date: date, video_id: str) -> str:
+    """Return the base filename for a video (without extension).
+    
+    Format: YYYY-MM-DD video_id
+    Used for both video and thumbnail files.
+    """
+    return f"{upload_date.isoformat()} {video_id}"
+
+
+def build_video_dir(output_root: Path, channel: str, upload_date: date, video_id: str) -> Path:
+    """Return the directory where video and thumbnail files should be stored.
+    
+    Structure: <output_root>/<channel>/Season <YYYY>/
+    Individual files within this directory follow the pattern: <YYYY-MM-DD video_id>.<ext>
+    """
+    return output_root / channel_folder_name(channel) / season_folder_name(upload_date)
 

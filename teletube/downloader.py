@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import Config, load_channels
-from .naming import build_video_dir, parse_upload_date
+from .naming import build_video_dir, parse_upload_date, video_file_base
 
 
 class DownloadError(RuntimeError):
@@ -87,23 +87,37 @@ def list_channel_videos(channel: str, start_date: date) -> list[VideoEntry]:
     return _parse_channel_entries(result.stdout, start_date)
 
 
-def _rename_thumbnail_to_folder_jpg(video_dir: Path) -> None:
+def _rename_thumbnail_to_expected_name(video_dir: Path, video_file_base: str) -> None:
+    """Rename a downloaded thumbnail to match the video filename pattern.
+    
+    Looks for *.jpg files (excluding the target), keeps the most recent one,
+    and renames it to {video_file_base}.jpg.
+    """
+    target_name = f"{video_file_base}.jpg"
     jpgs = [
         p
         for p in video_dir.iterdir()
-        if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg"} and p.name != "folder.jpg"
+        if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg"} and p.name != target_name
     ]
     if not jpgs:
         return
     thumb = max(jpgs, key=lambda p: p.stat().st_mtime)
-    target = video_dir / "folder.jpg"
+    target = video_dir / target_name
     if thumb != target:
         shutil.move(str(thumb), str(target))
 
 
 def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
+    """Download a video and its thumbnail to the destination directory.
+    
+    Video filename pattern: {YYYY-MM-DD video_id}.mp4 (or other ext from yt-dlp)
+    Thumbnail: {YYYY-MM-DD video_id}.jpg
+    """
     destination.mkdir(parents=True, exist_ok=True)
     video_url = f"https://www.youtube.com/watch?v={entry.video_id}"
+    
+    # Use video_file_base for output filename pattern
+    base_name = video_file_base(entry.upload_date, entry.video_id)
 
     run_yt_dlp(
         [
@@ -116,12 +130,12 @@ def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
             "--convert-thumbnails",
             "jpg",
             "-o",
-            str(destination / "video.%(ext)s"),
+            str(destination / f"{base_name}.%(ext)s"),
             video_url,
         ]
     )
 
-    _rename_thumbnail_to_folder_jpg(destination)
+    _rename_thumbnail_to_expected_name(destination, base_name)
 
 
 def process_channel(channel: str, config: Config) -> RunStats:
@@ -130,8 +144,11 @@ def process_channel(channel: str, config: Config) -> RunStats:
     skipped_old_or_invalid = 0
 
     for entry in list_channel_videos(channel, config.start_date):
-        target_dir = build_video_dir(config.output_root, channel, entry.upload_date, entry.title)
-        if target_dir.exists():
+        target_dir = build_video_dir(config.output_root, channel, entry.upload_date, entry.video_id)
+        # Check if video file already exists (using video_id-based naming)
+        base_name = video_file_base(entry.upload_date, entry.video_id)
+        existing_files = list(target_dir.glob(f"{base_name}.*")) if target_dir.exists() else []
+        if existing_files:
             skipped_existing += 1
             continue
         try:
