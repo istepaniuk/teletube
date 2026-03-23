@@ -12,11 +12,15 @@ Each downloaded video directory contains a `folder.jpg` thumbnail.
 
 - `TELETUBE_CHANNELS_FILE` (required): file with one channel per line.
 - `TELETUBE_START_DATE` (required): lower-bound publish date in `YYYY-MM-DD` format.
+- `TELETUBE_DESTINATION_ROOT` (required): destination root directory where channel folders are created.
 
 ## Quick start
 
 ```bash
 python -m pip install -r requirements.txt
+export TELETUBE_CHANNELS_FILE=/path/to/channels.txt
+export TELETUBE_START_DATE=2026-01-01
+export TELETUBE_DESTINATION_ROOT=/data
 python -m teletube
 ```
 

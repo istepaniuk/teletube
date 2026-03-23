@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apk add --no-cache ffmpeg tini deno
+RUN apk add --no-cache ffmpeg tini deno git
 
 COPY requirements.txt /app/
 RUN python -m pip install --no-cache-dir -r requirements.txt

@@ -43,15 +43,29 @@ def _parse_channels_file(raw: str) -> Path:
     return path
 
 
-def load_config(env: dict[str, str] | None = None, output_root: Path | None = None) -> Config:
+def _parse_destination_root(raw: str) -> Path:
+    path = Path(raw).expanduser()
+    if not path.exists():
+        raise ConfigError(f"TELETUBE_DESTINATION_ROOT does not exist: {path}")
+    if not path.is_dir():
+        raise ConfigError(f"TELETUBE_DESTINATION_ROOT is not a directory: {path}")
+    return path
+
+
+def load_config(env: dict[str, str] | None = None) -> Config:
     channels_file_raw = _require_env("TELETUBE_CHANNELS_FILE", env)
     start_date_raw = _require_env("TELETUBE_START_DATE", env)
+    destination_root_raw = _require_env("TELETUBE_DESTINATION_ROOT", env)
 
     channels_file = _parse_channels_file(channels_file_raw)
     start_date = _parse_start_date(start_date_raw)
+    destination_root = _parse_destination_root(destination_root_raw)
 
-    root = output_root if output_root is not None else Path.cwd()
-    return Config(channels_file=channels_file, start_date=start_date, output_root=root)
+    return Config(
+        channels_file=channels_file,
+        start_date=start_date,
+        output_root=destination_root,
+    )
 
 
 def load_channels(channels_file: Path) -> list[str]:

@@ -20,6 +20,8 @@ spec:
                   value: /config/channels.txt
                 - name: TELETUBE_START_DATE
                   value: "2026-01-01"
+                - name: TELETUBE_DESTINATION_ROOT
+                  value: /data
               volumeMounts:
                 - name: channels
                   mountPath: /config

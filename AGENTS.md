@@ -11,6 +11,7 @@ library will be consumed using Jellyfin.
 ## Product contract (must preserve)
 - Read channels from `TELETUBE_CHANNELS_FILE` (one channel per line).
 - Read start date from `TELETUBE_START_DATE` in strict `YYYY-MM-DD` format.
+- Read destination root from `TELETUBE_DESTINATION_ROOT` (mandatory existing directory).
 - Fail fast with clear errors when required env vars are missing or malformed.
 - Only download videos not already present (idempotent reruns).
 - Skip videos older than `TELETUBE_START_DATE`.

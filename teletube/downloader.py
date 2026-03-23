@@ -31,8 +31,29 @@ class RunStats:
 
 
 def run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess[str]:
-    command = ["yt-dlp", "--remote-components ejs:github", *args]
+    command = ["yt-dlp", "--remote-components", "ejs:github", *args]
     return subprocess.run(command, check=True, text=True, capture_output=True)
+
+
+def _find_videos_playlist(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return the raw video entries from the 'Videos' playlist tab.
+
+    Channel JSON returned by yt-dlp has the shape:
+        { "entries": [ { "title": "Videos", "entries": [...] },
+                       { "title": "Shorts", "entries": [...] }, ... ] }
+    We want only the 'Videos' tab. Fall back to the first tab that has
+    nested entries if no tab is explicitly titled 'Videos'.
+    """
+    tabs: list[dict[str, Any]] = data.get("entries") or []
+    for tab in tabs:
+        if (tab.get("title") or "").strip().lower() == "videos":
+            return tab.get("entries") or []
+    # fallback: first tab that itself contains entries (not flat video dicts)
+    for tab in tabs:
+        nested = tab.get("entries")
+        if isinstance(nested, list):
+            return nested
+    return []
 
 
 def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
@@ -41,10 +62,10 @@ def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
     except json.JSONDecodeError as exc:
         raise DownloadError("yt-dlp did not return valid JSON") from exc
 
-    raw_entries: list[dict[str, Any]] = data.get("entries") or []
+    raw_videos = _find_videos_playlist(data)
     entries: list[VideoEntry] = []
 
-    for item in raw_entries:
+    for item in raw_videos:
         video_id = (item.get("id") or "").strip()
         title = (item.get("title") or "").strip()
         raw_upload_date = (item.get("upload_date") or "").strip()
@@ -62,7 +83,7 @@ def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
 
 
 def list_channel_videos(channel: str, start_date: date) -> list[VideoEntry]:
-    result = run_yt_dlp(["--dump-single-json", channel])
+    result = run_yt_dlp(["--playlist-end", "10", "--dump-single-json", channel])
     return _parse_channel_entries(result.stdout, start_date)
 
 
