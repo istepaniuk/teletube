@@ -1,0 +1,37 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: teletube
+spec:
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: teletube
+              image: teletube:latest
+              env:
+                - name: TELETUBE_CHANNELS_FILE
+                  value: /config/channels.txt
+                - name: TELETUBE_START_DATE
+                  value: "2026-01-01"
+              volumeMounts:
+                - name: channels
+                  mountPath: /config
+                  readOnly: true
+                - name: media
+                  mountPath: /data
+              workingDir: /data
+          volumes:
+            - name: channels
+              configMap:
+                name: teletube-channels
+            - name: media
+              persistentVolumeClaim:
+                claimName: teletube-media-pvc
+

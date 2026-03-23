@@ -26,27 +26,29 @@ Use this layout when implementing the project:
 ├── AGENTS.md
 ├── Dockerfile
 ├── pyproject.toml
-├── src/
-│   └── teletube/
-│       ├── __init__.py
-│       ├── __main__.py
-│       ├── config.py
-│       ├── naming.py
-│       ├── downloader.py
+├── requirements.txt
+├── requirements-dev.txt
+├── teletube/
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── config.py
+│   ├── naming.py
+│   └── downloader.py
 ├── tests/
 │   ├── test_config.py
 │   ├── test_naming.py
+│   └── test_idempotency.py
 └── kubernetes/
-	├── cronjob.yaml
-	├── configmap.yaml
+    ├── cronjob.yaml
+    └── configmap.yaml
 ```
 
 ## Design constraints
 - Keep logic stateless between runs (hourly Kubernetes CronJob model).
 - Runs must be idempotent.
-- Keep config parsing centralized in `src/teletube/config.py`.
-- Keep naming/date rules centralized in `src/teletube/naming.py`.
-- Keep `yt-dlp` invocation isolated in `src/teletube/downloader.py`.
+- Keep config parsing centralized in `teletube/config.py`.
+- Keep naming/date rules centralized in `teletube/naming.py`.
+- Keep `yt-dlp` invocation isolated in `teletube/downloader.py`.
 
 ## Implementation workflow for agents
 1. Add minimal code that satisfies the product contract first.
