@@ -14,7 +14,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: teletube
-              image: teletube:latest
+              image: istepaniuk/teletube:latest
               env:
                 - name: TELETUBE_CHANNELS_FILE
                   value: /config/channels.txt
