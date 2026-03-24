@@ -1,20 +1,22 @@
 # Teletube
 
-Teletube is a small Python CronJob-style downloader that fetches YouTube channel videos with `yt-dlp` and stores them in a Jellyfin-compatible layout with metadata:
+Teletube is a small Python media downloader that fetches YouTube channel videos 
+with `yt-dlp` and stores them in a Jellyfin-compatible layout with metadata:
 
 ```text
 <output-root>/
   <channel>/
-    Season <YYYY>/
-      <YYYY-MM-DD video_id>.mp4
-      <YYYY-MM-DD video_id>.jpg
-      <YYYY-MM-DD video_id>.nfo
+    Season <YY>/
+      <YYYY-MM-DD-video_id>.mp4
+      <YYYY-MM-DD-video_id>.jpg
+      <YYYY-MM-DD-video_id>.nfo
 ```
 
 Each video is stored with:
-- **Video file**: `<YYYY-MM-DD video_id>.mp4` (or other ext from yt-dlp)
-- **Thumbnail**: `<YYYY-MM-DD video_id>.jpg` — poster image for Jellyfin
-- **Metadata**: `<YYYY-MM-DD video_id>.nfo` — Jellyfin episode details (title, air date, YouTube ID)
+- **Video file**: `<YYYY-MM-DD-video_id>.mp4` (or other ext from yt-dlp)
+- **Thumbnail**: `<YYYY-MM-DD-video_id>.jpg` — poster image for Jellyfin
+- **Metadata**: `<YYYY-MM-DD-video_id>.nfo` — Jellyfin episode details 
+  (title, air date, description, YouTube ID)
 
 ## Environment variables
 
