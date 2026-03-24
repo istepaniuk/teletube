@@ -22,6 +22,7 @@ class VideoEntry:
     video_id: str
     title: str
     upload_date: date
+    description: str = ""
 
 
 @dataclass(frozen=True)
@@ -70,6 +71,7 @@ def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
         video_id = (item.get("id") or "").strip()
         title = (item.get("title") or "").strip()
         raw_upload_date = (item.get("upload_date") or "").strip()
+        description = (item.get("description") or "").strip()
         if not video_id or not title or not raw_upload_date:
             continue
         try:
@@ -78,7 +80,14 @@ def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
             continue
         if upload_date < start_date:
             continue
-        entries.append(VideoEntry(video_id=video_id, title=title, upload_date=upload_date))
+        entries.append(
+            VideoEntry(
+                video_id=video_id,
+                title=title,
+                upload_date=upload_date,
+                description=description,
+            )
+        )
 
     return entries
 
@@ -124,7 +133,7 @@ def _create_nfo_file(video_dir: Path, video_file_base: str, entry: VideoEntry) -
     episode.append(title_elem)
     
     plot_elem = Element("plot")
-    plot_elem.text = f"YouTube video from {entry.upload_date.isoformat()}"
+    plot_elem.text = entry.description or f"YouTube video from {entry.upload_date.isoformat()}"
     episode.append(plot_elem)
     
     aired_elem = Element("aired")

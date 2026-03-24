@@ -14,7 +14,12 @@ def test_process_channel_skips_existing(monkeypatch, tmp_path: Path) -> None:
         start_date=date(2026, 1, 1),
         output_root=tmp_path,
     )
-    entry = VideoEntry(video_id="abc123", title="Video Title", upload_date=date(2026, 3, 1))
+    entry = VideoEntry(
+        video_id="abc123",
+        title="Video Title",
+        upload_date=date(2026, 3, 1),
+        description="This is a test video",
+    )
 
     monkeypatch.setattr("teletube.downloader.list_channel_videos", lambda _channel, _date: [entry])
 

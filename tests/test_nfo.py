@@ -27,6 +27,7 @@ def test_create_nfo_file_content(tmp_path: Path) -> None:
         video_id="dQw4w9WgXcQ",
         title="Test Video Title",
         upload_date=date(2026, 3, 15),
+        description="This is the video description from YouTube",
     )
     
     _create_nfo_file(tmp_path, "2026-03-15 dQw4w9WgXcQ", entry)
@@ -47,7 +48,7 @@ def test_create_nfo_file_content(tmp_path: Path) -> None:
     
     plot = root.find("plot")
     assert plot is not None
-    assert "2026-03-15" in plot.text
+    assert plot.text == "This is the video description from YouTube"
     
     uniqueid = root.find("uniqueid")
     assert uniqueid is not None
@@ -60,6 +61,7 @@ def test_create_nfo_file_xml_declaration(tmp_path: Path) -> None:
         video_id="test123",
         title="Title",
         upload_date=date(2026, 1, 1),
+        description="",
     )
     
     _create_nfo_file(tmp_path, "2026-01-01 test123", entry)
@@ -69,5 +71,25 @@ def test_create_nfo_file_xml_declaration(tmp_path: Path) -> None:
     
     assert content.startswith("<?xml")
     assert "encoding=" in content
+
+
+def test_create_nfo_file_fallback_empty_description(tmp_path: Path) -> None:
+    entry = VideoEntry(
+        video_id="test123",
+        title="Title",
+        upload_date=date(2026, 1, 1),
+        description="",
+    )
+    
+    _create_nfo_file(tmp_path, "2026-01-01 test123", entry)
+    
+    nfo_file = tmp_path / "2026-01-01 test123.nfo"
+    tree = parse_xml(nfo_file)
+    root = tree.getroot()
+    
+    plot = root.find("plot")
+    assert plot is not None
+    # Should fallback to date-based description when empty
+    assert plot.text == "YouTube video from 2026-01-01"
 
 
