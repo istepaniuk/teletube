@@ -6,6 +6,7 @@ with `yt-dlp` and stores them in a Jellyfin-compatible layout with metadata:
 ```text
 <output-root>/
   <channel>/
+    tvshow.nfo
     Season <YY>/
       <YYYY-MM-DD-video_id>.mp4
       <YYYY-MM-DD-video_id>.jpg
@@ -17,6 +18,10 @@ Each video is stored with:
 - **Thumbnail**: `<YYYY-MM-DD-video_id>.jpg` — poster image for Jellyfin
 - **Metadata**: `<YYYY-MM-DD-video_id>.nfo` — Jellyfin episode details 
   (title, air date, description, YouTube ID)
+
+Each channel directory also includes:
+- **Channel metadata**: `tvshow.nfo` — Jellyfin show-level metadata
+  (channel title, bio/description, avatar URL, banner URL when available)
 
 ## Module responsibilities
 

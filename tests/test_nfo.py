@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 from xml.etree.ElementTree import parse as parse_xml
 
-from teletube.nfo import create_nfo_file
+from teletube.nfo import create_nfo_file, create_tvshow_nfo_file
 
 
 def test_create_nfo_file_structure(tmp_path: Path) -> None:
@@ -94,5 +94,42 @@ def test_create_nfo_file_fallback_empty_description(tmp_path: Path) -> None:
     assert plot is not None
     # Should fallback to date-based description when empty
     assert plot.text == "YouTube video from 2026-01-01"
+
+
+def test_create_tvshow_nfo_file_content(tmp_path: Path) -> None:
+    create_tvshow_nfo_file(
+        channel_dir=tmp_path / "@mychannel",
+        title="@mychannel",
+        description="Channel bio",
+        avatar_url="https://img.example/avatar.jpg",
+        banner_url="https://img.example/banner.jpg",
+    )
+
+    nfo_file = tmp_path / "@mychannel" / "tvshow.nfo"
+    tree = parse_xml(nfo_file)
+    root = tree.getroot()
+
+    assert root.tag == "tvshow"
+    assert root.findtext("title") == "@mychannel"
+    assert root.findtext("plot") == "Channel bio"
+    assert root.findtext("thumb") == "https://img.example/avatar.jpg"
+    assert root.findtext("fanart/thumb") == "https://img.example/banner.jpg"
+
+
+def test_create_tvshow_nfo_file_without_optional_metadata(tmp_path: Path) -> None:
+    create_tvshow_nfo_file(
+        channel_dir=tmp_path / "@mychannel",
+        title="@mychannel",
+    )
+
+    nfo_file = tmp_path / "@mychannel" / "tvshow.nfo"
+    tree = parse_xml(nfo_file)
+    root = tree.getroot()
+
+    assert root.tag == "tvshow"
+    assert root.findtext("title") == "@mychannel"
+    assert root.find("plot") is None
+    assert root.find("thumb") is None
+    assert root.find("fanart") is None
 
 

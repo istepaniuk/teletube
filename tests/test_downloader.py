@@ -5,7 +5,7 @@ from datetime import date
 
 import pytest
 
-from teletube.downloader import DownloadError, _parse_channel_entries
+from teletube.downloader import DownloadError, _parse_channel_entries, _parse_channel_metadata
 
 
 def _make_channel_payload(videos: list[dict], extra_tabs: list[dict] | None = None) -> str:
@@ -76,4 +76,36 @@ def test_fallback_when_no_videos_tab() -> None:
     })
     entries = _parse_channel_entries(payload, start_date=date(2026, 1, 1))
     assert [e.video_id for e in entries] == ["live1"]
+
+
+def test_parse_channel_metadata_with_description_and_images() -> None:
+    payload = json.dumps(
+        {
+            "channel": "@mychannel",
+            "description": "Channel bio",
+            "thumbnails": [
+                {"id": "avatar_uncropped", "url": "https://img.example/avatar.jpg"},
+                {"id": "banner_uncropped", "url": "https://img.example/banner.jpg"},
+            ],
+        }
+    )
+
+    metadata = _parse_channel_metadata(payload, "https://www.youtube.com/@mychannel")
+
+    assert metadata.title == "@mychannel"
+    assert metadata.description == "Channel bio"
+    assert metadata.avatar_url == "https://img.example/avatar.jpg"
+    assert metadata.banner_url == "https://img.example/banner.jpg"
+
+
+def test_parse_channel_metadata_fallbacks() -> None:
+    payload = json.dumps({"title": "Fallback Channel"})
+
+    metadata = _parse_channel_metadata(payload, "https://www.youtube.com/@mychannel")
+
+    assert metadata.title == "Fallback Channel"
+    assert metadata.description == ""
+    assert metadata.avatar_url == ""
+    assert metadata.banner_url == ""
+
 

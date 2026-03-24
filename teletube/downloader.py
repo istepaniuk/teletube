@@ -7,9 +7,9 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from teletube.config import Config, load_channels
-from teletube.naming import build_video_dir, parse_upload_date, video_file_base
-from teletube.nfo import create_nfo_file
+from .config import Config, load_channels
+from .naming import build_video_dir, channel_folder_name, parse_upload_date, video_file_base
+from .nfo import create_nfo_file, create_tvshow_nfo_file
 
 
 class DownloadError(RuntimeError):
@@ -22,6 +22,14 @@ class VideoEntry:
     title: str
     upload_date: date
     description: str = ""
+
+
+@dataclass(frozen=True)
+class ChannelMetadata:
+    title: str
+    description: str = ""
+    avatar_url: str = ""
+    banner_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -59,6 +67,29 @@ def _find_videos_playlist(data: dict[str, Any]) -> list[dict[str, Any]]:
     return []
 
 
+def _pick_image_url(data: dict[str, Any], direct_keys: list[str], id_keywords: list[str]) -> str:
+    for key in direct_keys:
+        value = (data.get(key) or "").strip()
+        if value:
+            return value
+
+    thumbnails = data.get("thumbnails") or []
+    if not isinstance(thumbnails, list):
+        return ""
+
+    for thumb in thumbnails:
+        if not isinstance(thumb, dict):
+            continue
+        thumb_id = (thumb.get("id") or "").strip().lower()
+        thumb_url = (thumb.get("url") or "").strip()
+        if not thumb_url:
+            continue
+        if any(keyword in thumb_id for keyword in id_keywords):
+            return thumb_url
+
+    return ""
+
+
 def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
     try:
         data = json.loads(payload)
@@ -93,9 +124,47 @@ def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
     return entries
 
 
+def _parse_channel_metadata(payload: str, channel: str) -> ChannelMetadata:
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise DownloadError("yt-dlp did not return valid JSON") from exc
+
+    title = (
+        (data.get("channel") or "").strip()
+        or (data.get("uploader") or "").strip()
+        or (data.get("title") or "").strip()
+        or channel_folder_name(channel)
+    )
+    description = ((data.get("description") or "").strip() or (data.get("channel_description") or "").strip())
+
+    avatar_url = _pick_image_url(
+        data,
+        direct_keys=["channel_avatar", "uploader_avatar", "avatar"],
+        id_keywords=["avatar", "profile", "channel"],
+    )
+    banner_url = _pick_image_url(
+        data,
+        direct_keys=["channel_banner", "banner"],
+        id_keywords=["banner", "header"],
+    )
+
+    return ChannelMetadata(
+        title=title,
+        description=description,
+        avatar_url=avatar_url,
+        banner_url=banner_url,
+    )
+
+
 def list_channel_videos(channel: str, start_date: date) -> list[VideoEntry]:
     result = run_yt_dlp(["--dump-single-json", "--playlist-end", "10", channel])
     return _parse_channel_entries(result.stdout, start_date)
+
+
+def list_channel_metadata(channel: str) -> ChannelMetadata:
+    result = run_yt_dlp(["--dump-single-json", "--playlist-end", "1", channel])
+    return _parse_channel_metadata(result.stdout, channel)
 
 
 def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
@@ -141,6 +210,16 @@ def process_channel(channel: str, config: Config) -> RunStats:
     downloaded = 0
     skipped_existing = 0
     skipped_old_or_invalid = 0
+
+    channel_dir = config.output_root / channel_folder_name(channel)
+    channel_metadata = list_channel_metadata(channel)
+    create_tvshow_nfo_file(
+        channel_dir=channel_dir,
+        title=channel_metadata.title,
+        description=channel_metadata.description,
+        avatar_url=channel_metadata.avatar_url,
+        banner_url=channel_metadata.banner_url,
+    )
 
     for entry in list_channel_videos(channel, config.start_date):
         target_dir = build_video_dir(config.output_root, channel, entry.upload_date, entry.video_id)

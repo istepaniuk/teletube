@@ -23,6 +23,9 @@ YouTube videos which is ready be consumed using Jellyfin.
 - Generate Jellyfin metadata `.nfo` file with episode details (title, date, video ID).
 - Use the video description metadata to populate the plot tag in the `.nfo` file.
 - Use the day of the year to assign an episode number in the .nfo data.
+- Generate channel-level `tvshow.nfo` in each channel directory for Jellyfin library metadata.
+- Populate channel `tvshow.nfo` with channel title and bio/description when available.
+- Include channel avatar and banner image URLs in `tvshow.nfo` when available in `yt-dlp` metadata.
 
 
 ## AI-friendly repository structure
