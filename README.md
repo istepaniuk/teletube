@@ -53,3 +53,8 @@ python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
 
+## GitHub Actions Docker publish
+
+The repository includes `.github/workflows/docker-publish.yml` to build and push
+`istepaniuk/teletube:latest` to Docker Hub.
+
