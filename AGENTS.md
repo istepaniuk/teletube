@@ -4,9 +4,9 @@
 This is the single source of truth for Teletube product behavior and 
 coding-agent workflow.
 
-Teletube is a Python CronJob-style downloader that uses `yt-dlp` to fetch 
-YouTube channel videos into a local library. The goal is to be simple, the 
-library will be consumed using Jellyfin.
+Teletube is a simple Python video downloader that uses `yt-dlp` to fetch 
+YouTube channel videos into a local library. The goal is to keep a library of 
+YouTube videos which is ready be consumed using Jellyfin.
 
 ## Product contract (must preserve)
 - Read channels from `TELETUBE_CHANNELS_FILE` (one channel per line).
@@ -15,11 +15,15 @@ library will be consumed using Jellyfin.
 - Fail fast with clear errors when required env vars are missing or malformed.
 - Only download videos not already present (idempotent reruns).
 - Skip videos older than `TELETUBE_START_DATE`.
-- Download best available quality up to 1080p.
-- Download thumbnail as JPEG and store it alongside the video file (same base name).
+- Download with best available quality up to 1080p.
+- Instruct `yt-dlp` to convert the thumbnail to JPEG and store it alongside the 
+  video file (same base name).
+- Keep output layout as `@ChannelName/Season YY/<YYYY-MM-DD-video_id>.<ext>` 
+  (Jellyfin-compatible).
 - Generate Jellyfin metadata `.nfo` file with episode details (title, date, video ID).
-- Keep output layout as `channel/Season YYYY/<YYYY-MM-DD video_id>.<ext>` (Jellyfin-compatible).
-- Use video ID in filename to handle title changes across downloads.
+- Use the video description metadata to populate the plot tag in the `.nfo` file.
+- Use the day of the year to assign an episode number in the .nfo data.
+
 
 ## AI-friendly repository structure
 Use this layout when implementing the project:
