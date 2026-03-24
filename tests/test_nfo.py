@@ -41,7 +41,11 @@ def test_create_nfo_file_content(tmp_path: Path) -> None:
     title = root.find("title")
     assert title is not None
     assert title.text == "Test Video Title"
-    
+
+    episode = root.find("episode")
+    assert episode is not None
+    assert episode.text == "074"  # day-of-year of 2026-03-15
+
     aired = root.find("aired")
     assert aired is not None
     assert aired.text == "2026-03-15"

@@ -24,7 +24,7 @@ def test_process_channel_skips_existing(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("teletube.downloader.list_channel_videos", lambda _channel, _date: [entry])
 
     # Create the video file to simulate it already being downloaded
-    video_dir = tmp_path / "@mychannel" / "Season 2026"
+    video_dir = tmp_path / "@mychannel" / "Season 26"
     video_dir.mkdir(parents=True)
     base_name = video_file_base(date(2026, 3, 1), "abc123")
     video_file = video_dir / f"{base_name}.mp4"

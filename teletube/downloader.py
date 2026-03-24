@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 from dataclasses import dataclass
 from datetime import date
@@ -33,8 +32,10 @@ class RunStats:
 
 
 def run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess[str]:
-    command = ["yt-dlp", *args]
-    return subprocess.run(command, check=True, text=True, capture_output=True)
+    command = ["yt-dlp", "--cache-dir", "/tmp", "--remote-components", "ejs:github", *args]
+    print("- Running:", " ".join(command))
+    result = subprocess.run(command, check=True, text=True, capture_output=True)
+    return result
 
 
 def _find_videos_playlist(data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -93,28 +94,8 @@ def _parse_channel_entries(payload: str, start_date: date) -> list[VideoEntry]:
 
 
 def list_channel_videos(channel: str, start_date: date) -> list[VideoEntry]:
-    result = run_yt_dlp(["--dump-single-json", channel])
+    result = run_yt_dlp(["--dump-single-json", "--playlist-end", "10", channel])
     return _parse_channel_entries(result.stdout, start_date)
-
-
-def _rename_thumbnail_to_expected_name(video_dir: Path, video_file_base: str) -> None:
-    """Rename a downloaded thumbnail to match the video filename pattern.
-    
-    Looks for *.jpg files (excluding the target), keeps the most recent one,
-    and renames it to {video_file_base}.jpg.
-    """
-    target_name = f"{video_file_base}.jpg"
-    jpgs = [
-        p
-        for p in video_dir.iterdir()
-        if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg"} and p.name != target_name
-    ]
-    if not jpgs:
-        return
-    thumb = max(jpgs, key=lambda p: p.stat().st_mtime)
-    target = video_dir / target_name
-    if thumb != target:
-        shutil.move(str(thumb), str(target))
 
 
 def _create_nfo_file(video_dir: Path, video_file_base: str, entry: VideoEntry) -> None:
@@ -124,27 +105,31 @@ def _create_nfo_file(video_dir: Path, video_file_base: str, entry: VideoEntry) -
     Reference: https://jellyfin.org/docs/general/server/metadata/nfo/
     """
     nfo_path = video_dir / f"{video_file_base}.nfo"
-    
+
     # Create episode details XML structure
     episode = Element("episodedetails")
-    
+
     title_elem = Element("title")
     title_elem.text = entry.title
     episode.append(title_elem)
-    
+
+    episode_num_elem = Element("episode")
+    episode_num_elem.text = entry.upload_date.strftime("%j")  # Day of year
+    episode.append(episode_num_elem)
+
     plot_elem = Element("plot")
     plot_elem.text = entry.description or f"YouTube video from {entry.upload_date.isoformat()}"
     episode.append(plot_elem)
-    
+
     aired_elem = Element("aired")
     aired_elem.text = entry.upload_date.isoformat()
     episode.append(aired_elem)
-    
+
     uniqueid_elem = Element("uniqueid")
     uniqueid_elem.set("type", "youtube")
     uniqueid_elem.text = entry.video_id
     episode.append(uniqueid_elem)
-    
+
     # Write XML with proper declaration
     tree = ElementTree(episode)
     tree.write(nfo_path, encoding="utf-8", xml_declaration=True)
@@ -159,7 +144,7 @@ def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
     """
     destination.mkdir(parents=True, exist_ok=True)
     video_url = f"https://www.youtube.com/watch?v={entry.video_id}"
-    
+
     # Use video_file_base for output filename pattern
     base_name = video_file_base(entry.upload_date, entry.video_id)
 
@@ -179,7 +164,6 @@ def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
         ]
     )
 
-    _rename_thumbnail_to_expected_name(destination, base_name)
     _create_nfo_file(destination, base_name, entry)
 
 
