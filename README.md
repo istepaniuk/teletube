@@ -18,6 +18,13 @@ Each video is stored with:
 - **Metadata**: `<YYYY-MM-DD-video_id>.nfo` — Jellyfin episode details 
   (title, air date, description, YouTube ID)
 
+## Module responsibilities
+
+- `teletube/config.py`: environment parsing and validation.
+- `teletube/naming.py`: output naming and date parsing rules.
+- `teletube/nfo.py`: Jellyfin `.nfo` generation.
+- `teletube/downloader.py`: `yt-dlp` listing/download orchestration.
+
 ## Environment variables
 
 - `TELETUBE_CHANNELS_FILE` (required): file with one channel per line.

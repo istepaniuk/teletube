@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
-from xml.etree.ElementTree import Element, ElementTree
 
-from .config import Config, load_channels
-from .naming import build_video_dir, parse_upload_date, video_file_base
+from teletube.config import Config, load_channels
+from teletube.naming import build_video_dir, parse_upload_date, video_file_base
+from teletube.nfo import create_nfo_file
 
 
 class DownloadError(RuntimeError):
@@ -98,43 +98,6 @@ def list_channel_videos(channel: str, start_date: date) -> list[VideoEntry]:
     return _parse_channel_entries(result.stdout, start_date)
 
 
-def _create_nfo_file(video_dir: Path, video_file_base: str, entry: VideoEntry) -> None:
-    """Create a Jellyfin-compatible NFO metadata file for the video.
-    
-    Jellyfin expects episodedetails.nfo for videos organized by season.
-    Reference: https://jellyfin.org/docs/general/server/metadata/nfo/
-    """
-    nfo_path = video_dir / f"{video_file_base}.nfo"
-
-    # Create episode details XML structure
-    episode = Element("episodedetails")
-
-    title_elem = Element("title")
-    title_elem.text = entry.title
-    episode.append(title_elem)
-
-    episode_num_elem = Element("episode")
-    episode_num_elem.text = entry.upload_date.strftime("%j")  # Day of year
-    episode.append(episode_num_elem)
-
-    plot_elem = Element("plot")
-    plot_elem.text = entry.description or f"YouTube video from {entry.upload_date.isoformat()}"
-    episode.append(plot_elem)
-
-    aired_elem = Element("aired")
-    aired_elem.text = entry.upload_date.isoformat()
-    episode.append(aired_elem)
-
-    uniqueid_elem = Element("uniqueid")
-    uniqueid_elem.set("type", "youtube")
-    uniqueid_elem.text = entry.video_id
-    episode.append(uniqueid_elem)
-
-    # Write XML with proper declaration
-    tree = ElementTree(episode)
-    tree.write(nfo_path, encoding="utf-8", xml_declaration=True)
-
-
 def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
     """Download a video and its thumbnail to the destination directory.
     
@@ -164,7 +127,14 @@ def download_video(channel: str, entry: VideoEntry, destination: Path) -> None:
         ]
     )
 
-    _create_nfo_file(destination, base_name, entry)
+    create_nfo_file(
+        video_dir=destination,
+        base_name=base_name,
+        title=entry.title,
+        upload_date=entry.upload_date,
+        video_id=entry.video_id,
+        description=entry.description,
+    )
 
 
 def process_channel(channel: str, config: Config) -> RunStats:

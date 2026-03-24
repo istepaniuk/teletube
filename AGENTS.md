@@ -40,10 +40,12 @@ Use this layout when implementing the project:
 │   ├── __main__.py
 │   ├── config.py
 │   ├── naming.py
+│   ├── nfo.py
 │   └── downloader.py
 ├── tests/
 │   ├── test_config.py
 │   ├── test_naming.py
+│   ├── test_nfo.py
 │   └── test_idempotency.py
 └── kubernetes/
     ├── cronjob.yaml
@@ -55,6 +57,7 @@ Use this layout when implementing the project:
 - Runs must be idempotent.
 - Keep config parsing centralized in `teletube/config.py`.
 - Keep naming/date rules centralized in `teletube/naming.py`.
+- Keep Jellyfin `.nfo` generation centralized in `teletube/nfo.py`.
 - Keep `yt-dlp` invocation isolated in `teletube/downloader.py`.
 
 ## Implementation workflow for agents

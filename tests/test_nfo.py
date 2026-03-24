@@ -4,33 +4,31 @@ from datetime import date
 from pathlib import Path
 from xml.etree.ElementTree import parse as parse_xml
 
-import pytest
-
-from teletube.downloader import VideoEntry, _create_nfo_file
+from teletube.nfo import create_nfo_file
 
 
 def test_create_nfo_file_structure(tmp_path: Path) -> None:
-    entry = VideoEntry(
-        video_id="dQw4w9WgXcQ",
+    create_nfo_file(
+        video_dir=tmp_path,
+        base_name="2026-03-15 dQw4w9WgXcQ",
         title="Test Video Title",
         upload_date=date(2026, 3, 15),
+        video_id="dQw4w9WgXcQ",
     )
-    
-    _create_nfo_file(tmp_path, "2026-03-15 dQw4w9WgXcQ", entry)
     
     nfo_file = tmp_path / "2026-03-15 dQw4w9WgXcQ.nfo"
     assert nfo_file.exists()
 
 
 def test_create_nfo_file_content(tmp_path: Path) -> None:
-    entry = VideoEntry(
-        video_id="dQw4w9WgXcQ",
+    create_nfo_file(
+        video_dir=tmp_path,
+        base_name="2026-03-15 dQw4w9WgXcQ",
         title="Test Video Title",
         upload_date=date(2026, 3, 15),
+        video_id="dQw4w9WgXcQ",
         description="This is the video description from YouTube",
     )
-    
-    _create_nfo_file(tmp_path, "2026-03-15 dQw4w9WgXcQ", entry)
     
     nfo_file = tmp_path / "2026-03-15 dQw4w9WgXcQ.nfo"
     tree = parse_xml(nfo_file)
@@ -61,14 +59,14 @@ def test_create_nfo_file_content(tmp_path: Path) -> None:
 
 
 def test_create_nfo_file_xml_declaration(tmp_path: Path) -> None:
-    entry = VideoEntry(
-        video_id="test123",
+    create_nfo_file(
+        video_dir=tmp_path,
+        base_name="2026-01-01 test123",
         title="Title",
         upload_date=date(2026, 1, 1),
+        video_id="test123",
         description="",
     )
-    
-    _create_nfo_file(tmp_path, "2026-01-01 test123", entry)
     
     nfo_file = tmp_path / "2026-01-01 test123.nfo"
     content = nfo_file.read_text(encoding="utf-8")
@@ -78,15 +76,16 @@ def test_create_nfo_file_xml_declaration(tmp_path: Path) -> None:
 
 
 def test_create_nfo_file_fallback_empty_description(tmp_path: Path) -> None:
-    entry = VideoEntry(
-        video_id="test123",
+    create_nfo_file(
+        video_dir=tmp_path,
+        base_name="2026-01-01 test123",
         title="Title",
         upload_date=date(2026, 1, 1),
+        video_id="test123",
         description="",
     )
     
-    _create_nfo_file(tmp_path, "2026-01-01 test123", entry)
-    
+
     nfo_file = tmp_path / "2026-01-01 test123.nfo"
     tree = parse_xml(nfo_file)
     root = tree.getroot()
